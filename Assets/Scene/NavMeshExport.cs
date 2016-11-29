@@ -7,6 +7,8 @@ using UnityEngine;
 //navmesh导出数据
 public class NavMeshExport : MonoBehaviour
 {
+    private GameObject _testMap;
+
     [MenuItem("Tools/Export NavMesh Data")]
     private static void Export()
     {
@@ -34,6 +36,8 @@ public class NavMeshExport : MonoBehaviour
     {
         GameObject obj = GameObject.Find("_NavMesh");
         Vector3[] localVectors = obj.GetComponent<MeshFilter>().sharedMesh.vertices;
+        int[] triangles = obj.GetComponent<MeshFilter>().sharedMesh.triangles;
+
         //把mesh的本地坐标转成世界坐标
         Vector3[] worldVectors = new Vector3[localVectors.Length];
         for (int i = 0; i < localVectors.Length; ++i)
@@ -43,11 +47,14 @@ public class NavMeshExport : MonoBehaviour
         }
 
         //检测点
-        Vector3 checkPoint = new Vector3(-4.2f,0, 0);
+        Vector3 checkPoint = GameObject.Find("TestPoint").transform.position;
         bool _isInside = false;
-        for (int i = 2; i < worldVectors.Length; i++)
+
+        for (int i = 0; i < triangles.Length; i += 3)
         {
-            if (IsInside(worldVectors[i - 2], worldVectors[i - 1], worldVectors[i], checkPoint))
+            //Debug.Log(string.Format("{0},{1},{2}", triangles[i], triangles[i + 1], triangles[i + 2]));
+
+            if (IsInside(worldVectors[triangles[i]], worldVectors[triangles[i + 1]], worldVectors[triangles[i + 2]], checkPoint))
             {
                 _isInside = true;
                 break;
@@ -103,6 +110,7 @@ public class NavMeshExport : MonoBehaviour
     private static void ExportNavData(GameObject obj)
     {
         Vector3[] localVectors = obj.transform.Find("_NavMesh").GetComponent<MeshFilter>().sharedMesh.vertices;
+        int[] triangles = obj.transform.Find("_NavMesh").GetComponent<MeshFilter>().sharedMesh.triangles;
         //把mesh的本地坐标转成世界坐标
         Vector3[] worldVectors = new Vector3[localVectors.Length];
         for (int i = 0; i < localVectors.Length; i++)
@@ -112,17 +120,22 @@ public class NavMeshExport : MonoBehaviour
         }
         StringBuilder sb = new StringBuilder();
         sb.Append("local nav = {\n");
-        for (int i = 0;i< worldVectors.Length; i++)
+        for (int i = 0; i < triangles.Length; i += 3)
         {
-            sb.AppendFormat("\t{{{0},{1},{2}}},\n", worldVectors[i].x, worldVectors[i].y, worldVectors[i].z);
+            sb.AppendFormat("\t{{{0},{1},{2}}},\n", _VectorToLua(worldVectors[triangles[i]]), _VectorToLua(worldVectors[triangles[i + 1]]), _VectorToLua(worldVectors[triangles[i + 2]]));
         }
-        sb.Append("}}\n");
+        sb.Append("}\n");
         sb.Append("return nav");
         using (StreamWriter sw = new StreamWriter(Application.dataPath + "/navmesh/" + obj.name + ".lua"))
         {
             sw.Write(sb.ToString());
         }
         DestroyImmediate(obj);
+    }
+
+    private static string _VectorToLua(Vector3 vec)
+    {
+        return string.Format("{{{0},{1},{2}}}", vec.x, vec.y, vec.z);
     }
 
     //判断点是否在三角形内
