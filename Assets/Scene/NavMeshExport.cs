@@ -3,6 +3,7 @@ using System.Text;
 using UnityEditor;
 using UnityEngine.SceneManagement;
 using UnityEngine;
+using UnityEngine.AI;
 
 //navmesh导出数据
 public class NavMeshExport : MonoBehaviour
@@ -12,7 +13,7 @@ public class NavMeshExport : MonoBehaviour
     [MenuItem("Tools/Export NavMesh Data")]
     private static void Export()
     {
-        NavMeshTriangulation triangulatedNavMesh = NavMesh.CalculateTriangulation();
+		NavMeshTriangulation triangulatedNavMesh = NavMesh.CalculateTriangulation();
 
         Mesh mesh = new Mesh();
         mesh.name = "_NavMesh";
@@ -23,6 +24,7 @@ public class NavMeshExport : MonoBehaviour
         string fileName = Application.dataPath + "/navmesh/" + baseName + ".obj";
         ExportNavmesh(mesh, fileName);
 
+		AssetDatabase.Refresh();
         string assetName = fileName.Replace(Application.dataPath, "Assets");
         GameObject navMesh = Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(assetName));
         navMesh.name = baseName;
@@ -96,7 +98,7 @@ public class NavMeshExport : MonoBehaviour
                 sb.Append(string.Format("f {0}/{0}/{0} {1}/{1}/{1} {2}/{2}/{2}\n", triangles[i] + 1, triangles[i + 1] + 1, triangles[i + 2] + 1));
             }
         }
-        return sb.ToString();
+        return sb.ToString(); 
     }
 
     private static void ExportNavmesh(Mesh mesh, string filename)
